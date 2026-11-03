@@ -1,0 +1,41 @@
+name: Snake
+
+on:
+  schedule:
+    - cron: "40 0 * * *"
+  workflow_dispatch:
+  push:
+    paths: [.github/workflows/snake.yml]
+
+permissions:
+  contents: write
+
+concurrency: snake
+
+jobs:
+  snake:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: Platane/snk/svg-only@v3
+        with:
+          github_user_name: ${{ github.repository_owner }}
+          outputs: |
+            dist/snake-gold.svg?color_snake=#C9A227&color_dots=#161b22,#3a2f14,#6b5420,#9c7a1c,#e0b84a
+
+      - name: Commit the snake if it changed
+        shell: bash
+        run: |
+          mkdir -p snake
+          cp dist/snake-gold.svg snake/snake-gold.svg
+          git add snake/snake-gold.svg
+          if git diff --cached --quiet; then
+            echo "The snake is unchanged; nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit --quiet --message "snake: redraw the trail"
+          git pull --rebase --quiet
+          git push --quiet
